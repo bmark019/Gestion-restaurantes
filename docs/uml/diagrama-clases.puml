@@ -1,0 +1,202 @@
+@startuml
+skinparam dpi 150
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 12
+skinparam nodesep 90
+skinparam ranksep 50
+skinparam class {
+  BackgroundColor #FFFFFF
+  HeaderBackgroundColor #DCE6F1
+  BorderColor #1F3864
+  ArrowColor #1F3864
+}
+hide circle
+title Diagrama de clases UML - Sistema de Gestión de Restaurantes
+
+abstract class Empleado {
+  # id: int
+  # nombre: String
+  # cedula: String
+  # usuario: String
+  - clave: String
+  # activo: boolean
+  + iniciarSesion(usuario: String, clave: String): boolean
+  + cambiarClave(claveActual: String, claveNueva: String): boolean
+  {abstract} + obtenerRol(): String
+  {abstract} + calcularDesempeno(): double
+}
+
+class Administrador {
+  - nivelAcceso: int
+  - personal: List<Empleado>
+  - menu: List<Categoria>
+  + obtenerRol(): String
+  + calcularDesempeno(): double
+  + registrarEmpleado(empleado: Empleado): void
+  + darDeBajaEmpleado(empleado: Empleado): void
+  + asignarTurno(empleado: Empleado, turno: Turno): void
+  + agregarPlatoAlMenu(plato: Plato, categoria: Categoria): void
+  + consultarDesempeno(empleado: Empleado): double
+  + generarReportePlatosMasVendidos(turno: Turno): List<Plato>
+}
+
+class Mesero {
+  - mesasAsignadas: List<Mesa>
+  - pedidosAtendidos: int
+  + obtenerRol(): String
+  + calcularDesempeno(): double
+  + asignarMesa(mesa: Mesa): void
+  + tomarPedido(mesa: Mesa, cliente: Cliente): Pedido
+  + entregarPedido(pedido: Pedido): void
+  + cobrarPedido(pedido: Pedido, metodoPago: String): Factura
+}
+
+class Cocinero {
+  - especialidad: String
+  - platosPreparados: int
+  + obtenerRol(): String
+  + calcularDesempeno(): double
+  + prepararPedido(pedido: Pedido, inventario: Inventario): boolean
+  + marcarPedidoListo(pedido: Pedido): void
+}
+
+class Cliente {
+  - id: int
+  - nombre: String
+  - cedula: String
+  - telefono: String
+  + actualizarDatos(nombre: String, telefono: String): void
+  + obtenerDatosFactura(): String
+}
+
+class Mesa {
+  - numero: int
+  - capacidad: int
+  - estado: String
+  + ocupar(): void
+  + liberar(): void
+  + estaDisponible(): boolean
+}
+
+class Pedido {
+  - numero: int
+  - fechaHora: LocalDateTime
+  - estado: String
+  - mesa: Mesa
+  - mesero: Mesero
+  - cliente: Cliente
+  - detalles: List<DetallePedido>
+  + agregarPlato(plato: Plato, cantidad: int, observacion: String): void
+  + quitarPlato(plato: Plato): void
+  + calcularSubtotal(): double
+  + cambiarEstado(nuevoEstado: String): void
+}
+
+class DetallePedido {
+  - plato: Plato
+  - cantidad: int
+  - observacion: String
+  + calcularImporte(): double
+}
+
+class Plato {
+  - codigo: int
+  - nombre: String
+  - precio: double
+  - disponible: boolean
+  - vecesVendido: int
+  - ingredientes: List<Ingrediente>
+  + agregarIngrediente(ingrediente: Ingrediente): void
+  + actualizarPrecio(nuevoPrecio: double): void
+  + registrarVenta(cantidad: int): void
+}
+
+class Categoria {
+  - id: int
+  - nombre: String
+  - descripcion: String
+  - platos: List<Plato>
+  + agregarPlato(plato: Plato): void
+  + quitarPlato(plato: Plato): void
+  + listarPlatosDisponibles(): List<Plato>
+  + obtenerPlatoMasVendido(): Plato
+}
+
+class Ingrediente {
+  - codigo: int
+  - nombre: String
+  - unidadMedida: String
+  - cantidadDisponible: double
+  - stockMinimo: double
+  + aumentarStock(cantidad: double): void
+  + descontarStock(cantidad: double): boolean
+  + necesitaReposicion(): boolean
+}
+
+class Inventario {
+  - ingredientes: List<Ingrediente>
+  - fechaActualizacion: LocalDate
+  + registrarIngrediente(ingrediente: Ingrediente): void
+  + registrarEntrada(ingrediente: Ingrediente, cantidad: double): void
+  + descontarIngredientes(plato: Plato, cantidad: int): boolean
+  + listarIngredientesPorAgotarse(): List<Ingrediente>
+}
+
+class Factura {
+  - numero: int
+  - fecha: LocalDateTime
+  - pedido: Pedido
+  - subtotal: double
+  - impuesto: double
+  - total: double
+  - metodoPago: String
+  - pagada: boolean
+  + calcularImpuesto(): double
+  + calcularTotal(): double
+  + registrarPago(metodoPago: String): void
+  + generarComprobante(): String
+}
+
+class Turno {
+  - id: int
+  - fecha: LocalDate
+  - horaInicio: LocalTime
+  - horaFin: LocalTime
+  - abierto: boolean
+  - empleados: List<Empleado>
+  - facturas: List<Factura>
+  + asignarEmpleado(empleado: Empleado): void
+  + registrarFactura(factura: Factura): void
+  + calcularTotalVentas(): double
+  + obtenerPlatosMasVendidos(cantidad: int): List<Plato>
+  + cerrarTurno(): double
+}
+
+Empleado <|-- Administrador
+Empleado <|-- Mesero
+Empleado <|-- Cocinero
+Administrador "1" -up-> "*" Empleado : gestiona
+Administrador "1" -down-> "*" Categoria : administra
+Mesero "1" -down-> "*" Mesa : atiende
+Pedido "*" -right-> "1" Mesa : se registra en
+Pedido "*" -up-> "1" Mesero : es tomado por
+Pedido "*" -left-> "1" Cliente : es solicitado por
+Pedido "1" *-down- "1..*" DetallePedido : contiene
+DetallePedido "*" -right-> "1" Plato : corresponde a
+Categoria "1" o-down- "*" Plato : agrupa
+Plato "*" -right-> "1..*" Ingrediente : usa
+Inventario "1" o-down- "*" Ingrediente : almacena
+Factura "1" -down-> "1" Pedido : cobra
+Turno "*" o-right- "1..*" Empleado : tiene asignado a
+Turno "1" o-down- "*" Factura : acumula
+Cocinero .down.> Pedido : prepara
+Cocinero .down.> Inventario : consume de
+
+legend bottom right
+  <b>Modificadores de acceso</b>
+  + public  |  - private  |  # protected
+  <i>Cursiva</i>: clase o método abstracto
+  Los getters y setters públicos se omiten
+endlegend
+@enduml
